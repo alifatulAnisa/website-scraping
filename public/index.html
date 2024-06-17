@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exchange Rates</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="row">
+      <div class="col">
+        <h1 class="mt-4">Exchange Rates</h1>
+        <div id="last-updated" class="text-end"></div>
+        <table class="table mt-4">
+          <thead>
+            <tr>
+              <th>Country Name</th>
+              <th>Buy Rate</th>
+              <th>Sell Rate</th>
+            </tr>
+          </thead>
+          <tbody id="exchange-rates">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentPage = 0;
+    const rowsPerPage = 10;
+
+    function fetchExchangeRates() {
+    $.getJSON('/api/exchange-rates', function(data) {
+      const rows = data.data;
+      const timestamp = data.timestamp;
+
+      $('#last-updated').text('Last updated: ' + timestamp);
+      displayRows(rows, currentPage, rowsPerPage);
+
+      window.exchangeRows = rows;
+    }).fail(function() {
+      console.error("Error fetching exchange rates");
+    });
+  }
+
+    function displayRows(rows, page, rowsPerPage) {
+      $('#exchange-rates').empty();
+      const start = page * rowsPerPage;
+      const end = start + rowsPerPage;
+      const rowsToDisplay = rows.slice(start, end);
+
+      rowsToDisplay.forEach(row => {
+        $('#exchange-rates').append(`
+          <tr>
+            <td>${row.countryName}</td>
+            <td>${row.buyRate}</td>
+            <td>${row.sellRate}</td>
+          </tr>
+        `);
+      });
+    }
+
+    $(document).ready(function() {
+      fetchExchangeRates();
+      setInterval(() => {
+        currentPage = (currentPage + 1) % Math.ceil(window.exchangeRows.length / rowsPerPage);
+        displayRows(window.exchangeRows, currentPage, rowsPerPage);
+      }, 120000); // Change every 2 minutes
+      setInterval(fetchExchangeRates, 3600000); // Refresh data every hour
+    });
+  </script>
+</body>
+</html>
